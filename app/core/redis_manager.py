@@ -12,7 +12,8 @@ class RedisManager:
 
         # Parse nodes
         nodes = [n.strip() for n in settings.REDIS_NODES.split(",") if n.strip()]
-        self.consistent_hash = ConsistentHash(nodes, settings.VIRTUAL_NODES)
+        # TODO: uncomment and use consistent hashing for Sharding
+        # self.consistent_hash = ConsistentHash(nodes, settings.VIRTUAL_NODES)
 
         # Initialize clients for each node
         for node in nodes:
