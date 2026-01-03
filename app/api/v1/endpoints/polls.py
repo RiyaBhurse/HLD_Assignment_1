@@ -8,10 +8,10 @@ router = APIRouter()
 service = PollingService()
 
 
-@router.on_event("startup")
-async def startup_event():
-    import asyncio
-    asyncio.create_task(service.flush_batch())
+# @router.on_event("startup")
+# async def startup_event():
+#     import asyncio
+#     asyncio.create_task(service.flush_batch())
 
 
 @router.post("/vote/{poll_id}")
@@ -26,7 +26,7 @@ async def vote(poll_id: str, vote_req: VoteRequest):
 @router.get("/results/{poll_id}", response_model=PollResults)
 async def get_results(poll_id: str):
     results = await service.get_results(poll_id)
-    served_via = "unknown"  # TODO: determine how & where to get this info from
+    served_via = "in_memory"  # TODO: determine how & where to get this info from
     return PollResults(
         poll_id=poll_id,
         results=results,

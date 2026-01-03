@@ -21,7 +21,8 @@ class PollingService:
         Task 4: Buffer in memory (Batching).
         """
         # TODO: Implement vote logic based on the current task
-        raise NotImplemented
+        # raise NotImplemented
+        self._memory_storage[poll_id][option_id] += 1
 
     async def get_results(self, poll_id: str) -> Dict[str, int]:
         """
@@ -33,7 +34,8 @@ class PollingService:
         """
         # TODO: Implement result fetching logic
         # Should return a dictionary like {"OptionA": 5, "OptionB": 3}
-        raise NotImplemented
+        # raise NotImplemented
+        return self._memory_storage[poll_id]
 
     async def flush_batch(self):
         """
