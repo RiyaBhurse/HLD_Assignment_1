@@ -1,4 +1,5 @@
 import asyncio
+import time
 from collections import defaultdict
 from typing import Dict
 
@@ -12,6 +13,8 @@ class PollingService:
 
     def __init__(self):
         self.redis_manager = RedisManager()
+        self._cache = {}
+        self.CACHE_TTL = 5  # 5 seconds
 
     async def vote(self, poll_id: str, option_id: str) -> None:
         """
@@ -42,9 +45,22 @@ class PollingService:
 
         # return self._memory_storage[poll_id]
 
+        # client = await self.redis_manager.get_client(poll_id)
+        # raw_results = await client.hgetall(poll_id)
+        # return {k: int(v) for k, v in raw_results.items()}
+
+        current_time = time.time()
+        if poll_id in self._cache:
+            timestamp, cached_data = self._cache[poll_id]
+            if current_time - timestamp < self.CACHE_TTL:
+                return cached_data, "app_cache"
+            
         client = await self.redis_manager.get_client(poll_id)
         raw_results = await client.hgetall(poll_id)
-        return {k: int(v) for k, v in raw_results.items()}
+        results = {k: int(v) for k, v in raw_results.items()}
+        self._cache[poll_id] = (current_time, results)
+        return results, "redis"
+        
 
     async def flush_batch(self):
         """
