@@ -22,7 +22,11 @@ class PollingService:
         """
         # TODO: Implement vote logic based on the current task
         # raise NotImplemented
-        self._memory_storage[poll_id][option_id] += 1
+
+        # self._memory_storage[poll_id][option_id] += 1
+
+        client = await self.redis_manager.get_client(poll_id)
+        await client.hincrby(poll_id, option_id, 1)
 
     async def get_results(self, poll_id: str) -> Dict[str, int]:
         """
@@ -35,7 +39,12 @@ class PollingService:
         # TODO: Implement result fetching logic
         # Should return a dictionary like {"OptionA": 5, "OptionB": 3}
         # raise NotImplemented
-        return self._memory_storage[poll_id]
+
+        # return self._memory_storage[poll_id]
+
+        client = await self.redis_manager.get_client(poll_id)
+        raw_results = await client.hgetall(poll_id)
+        return {k: int(v) for k, v in raw_results.items()}
 
     async def flush_batch(self):
         """
