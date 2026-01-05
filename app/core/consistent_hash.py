@@ -21,15 +21,34 @@ class ConsistentHash:
         # TODO: Implement adding a new node
         # 1. Create virtual nodes for the new physical node
         # 2. Update hash_ring and sorted_keys
-        raise NotImplemented
+        # raise NotImplemented
+
+        for i in range(self.virtual_nodes):
+            virtual_key = f"{node}#{i}"
+            hash_val = self._hash(virtual_key)
+            
+            self.hash_ring[hash_val] = node
+            self.sorted_keys.append(hash_val)
+        self.sorted_keys.sort()
 
     def get_node(self, key: str) -> str:
         """Get the node responsible for the given key"""
         if not self.hash_ring:
-            raise NotImplemented
+            # raise NotImplemented
+            return None
 
         # TODO: Implement node lookup
         # 1. Calculate hash of the key
         # 2. Find the first node in the ring that comes after the key's hash
         # 3. If no such node exists, wrap around to the first node
-        raise NotImplemented
+        # raise NotImplemented
+
+        hash_val = self._hash(key)
+        
+        idx = bisect(self.sorted_keys, hash_val)
+        
+        if idx == len(self.sorted_keys):
+            idx = 0
+            
+        target_hash = self.sorted_keys[idx]
+        return self.hash_ring[target_hash]

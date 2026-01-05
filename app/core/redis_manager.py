@@ -13,7 +13,7 @@ class RedisManager:
         # Parse nodes
         nodes = [n.strip() for n in settings.REDIS_NODES.split(",") if n.strip()]
         # TODO: uncomment and use consistent hashing for Sharding
-        # self.consistent_hash = ConsistentHash(nodes, settings.VIRTUAL_NODES)
+        self.consistent_hash = ConsistentHash(nodes, settings.VIRTUAL_NODES)
 
         # Initialize clients for each node
         for node in nodes:
@@ -25,5 +25,14 @@ class RedisManager:
         # 1. Use consistent hashing to determine which node should handle this key
         # 2. Return the Redis client for that node
         # raise NotImplemented
-        first_node_url = list(self.clients.keys())[0]
-        return self.clients[first_node_url]
+
+
+        # first_node_url = list(self.clients.keys())[0]
+        # return self.clients[first_node_url]
+
+        target_node = self.consistent_hash.get_node(key)
+        
+        if target_node:
+             return self.clients[target_node]
+             
+        raise Exception("No Redis nodes available")

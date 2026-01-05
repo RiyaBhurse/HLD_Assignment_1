@@ -64,17 +64,37 @@ class PollingService:
         # return results, "redis"
 
        
+        # client = await self.redis_manager.get_client(poll_id)
+        # raw_results = await client.hgetall(poll_id)
+        # results = {k: int(v) for k, v in raw_results.items()}
+        
+        # if poll_id in self._memory_storage:
+        #      for option, count in self._memory_storage[poll_id].items():
+        #          results[option] = results.get(option, 0) + count
+        
+        # return results, "redis"
+
+
+        current_time = time.time()
+        if poll_id in self._cache:
+            timestamp, cached_data = self._cache[poll_id]
+            if current_time - timestamp < self.CACHE_TTL:
+                return cached_data, "app_cache"
+        
+        node_url = self.redis_manager.consistent_hash.get_node(poll_id)
+        debug_source = f"redis_{node_url}"
+
         client = await self.redis_manager.get_client(poll_id)
         raw_results = await client.hgetall(poll_id)
         results = {k: int(v) for k, v in raw_results.items()}
-        
+
         if poll_id in self._memory_storage:
              for option, count in self._memory_storage[poll_id].items():
                  results[option] = results.get(option, 0) + count
-        
-        return results, "redis"
-        
-        
+
+        self._cache[poll_id] = (current_time, results)
+        return results, debug_source
+
 
 
     async def flush_batch(self):
