@@ -8,10 +8,10 @@ router = APIRouter()
 service = PollingService()
 
 
-# @router.on_event("startup")
-# async def startup_event():
-#     import asyncio
-#     asyncio.create_task(service.flush_batch())
+@router.on_event("startup")
+async def startup_event():
+    import asyncio
+    asyncio.create_task(service.flush_batch())
 
 
 @router.post("/vote/{poll_id}")

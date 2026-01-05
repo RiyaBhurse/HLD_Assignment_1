@@ -28,8 +28,10 @@ class PollingService:
 
         # self._memory_storage[poll_id][option_id] += 1
 
-        client = await self.redis_manager.get_client(poll_id)
-        await client.hincrby(poll_id, option_id, 1)
+        # client = await self.redis_manager.get_client(poll_id)
+        # await client.hincrby(poll_id, option_id, 1)
+
+        self._memory_storage[poll_id][option_id] += 1
 
     async def get_results(self, poll_id: str) -> Dict[str, int]:
         """
@@ -49,18 +51,31 @@ class PollingService:
         # raw_results = await client.hgetall(poll_id)
         # return {k: int(v) for k, v in raw_results.items()}
 
-        current_time = time.time()
-        if poll_id in self._cache:
-            timestamp, cached_data = self._cache[poll_id]
-            if current_time - timestamp < self.CACHE_TTL:
-                return cached_data, "app_cache"
+        # current_time = time.time()
+        # if poll_id in self._cache:
+        #     timestamp, cached_data = self._cache[poll_id]
+        #     if current_time - timestamp < self.CACHE_TTL:
+        #         return cached_data, "app_cache"
             
+        # client = await self.redis_manager.get_client(poll_id)
+        # raw_results = await client.hgetall(poll_id)
+        # results = {k: int(v) for k, v in raw_results.items()}
+        # self._cache[poll_id] = (current_time, results)
+        # return results, "redis"
+
+       
         client = await self.redis_manager.get_client(poll_id)
         raw_results = await client.hgetall(poll_id)
         results = {k: int(v) for k, v in raw_results.items()}
-        self._cache[poll_id] = (current_time, results)
+        
+        if poll_id in self._memory_storage:
+             for option, count in self._memory_storage[poll_id].items():
+                 results[option] = results.get(option, 0) + count
+        
         return results, "redis"
         
+        
+
 
     async def flush_batch(self):
         """
@@ -70,4 +85,24 @@ class PollingService:
         # 1. Loop forever (while True)
         # 2. Wait for BATCH_INTERVAL_SECONDS
         # 3. Flush _memory_storage to Redis
-        raise NotImplemented
+        # raise NotImplemented
+        while True:
+            await asyncio.sleep(settings.BATCH_INTERVAL_SECONDS)
+            
+            if not self._memory_storage:
+                continue
+                
+            print(f"Flushing {len(self._memory_storage)} polls to Redis...")
+
+            polls_to_flush = dict(self._memory_storage)
+            self._memory_storage.clear()
+            
+            for poll_id, votes in polls_to_flush.items():
+                try:
+                    client = await self.redis_manager.get_client(poll_id)
+                    async with client.pipeline() as pipe:
+                        for option_id, count in votes.items():
+                            pipe.hincrby(poll_id, option_id, count)
+                        await pipe.execute()
+                except Exception as e:
+                    print(f"Error flushing poll {poll_id}: {e}")
